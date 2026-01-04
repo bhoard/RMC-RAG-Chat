@@ -66,10 +66,10 @@ simple-rag-pipeline/
 ├── 2_crawl_pages.py         # Stage 2: Crawl and extract content
 ├── recrawl.py               # Utility: Force recrawl URLs
 ├── 3_process_content.py     # Stage 3: Chunk and process text
-├── 4_generate_embeddings.py # Stage 4: Create vector embeddings (coming soon)
+├── 4_generate_embeddings.py # Stage 4: Create vector embeddings
 ├── crawl_ledger.db          # SQLite: URLs and raw content
 ├── chunks.db                # SQLite: Processed chunks
-└── vector_store.db          # SQLite: Vector embeddings (coming soon)
+└── embeddings.db            # SQLite: Vector embeddings
 ```
 
 ## 🔧 Available Commands
@@ -79,11 +79,11 @@ Run `make` or `make menu` to see all available commands:
 - `make setup` - Install dependencies
 - `make stage1` - Fetch sitemap URLs
 - `make stage2` - Crawl pages with Crawl4AI
-- `make stage3` - Process content
-- `make stage4` - Generate embeddings (coming soon)
+- `make stage4` - Generate embeddings
 - `make stats` - Show database statistics
 - `make show-content` - Preview crawled content
 - `make show-chunks` - Preview chunks
+- `make show-embeddings` - Preview embeddings
 - `make inspect-db` - Open SQLite shell
 - `make recrawl URL='<pattern>'` - Force recrawl specific URLs
 - `make clean` - Remove all databases
@@ -110,6 +110,16 @@ Run `make` or `make menu` to see all available commands:
 - `token_count` (INTEGER) - Approximate token count
 - `heading_context` (TEXT) - Markdown heading this chunk falls under
 - `created_at` (TEXT) - When chunk was created
+
+### embeddings.db
+
+**embeddings table**:
+- `embedding_id` (INTEGER, PRIMARY KEY) - Auto-incrementing ID
+- `chunk_id` (INTEGER, UNIQUE) - Foreign key to chunks table
+- `embedding_vector` (TEXT) - JSON array of floats (the vector)
+- `model_name` (TEXT) - Model that generated this embedding
+- `model_dimension` (INTEGER) - Vector dimensions
+- `created_at` (TEXT) - When embedding was created
 
 ## 🛠️ Pipeline Stages
 
@@ -208,8 +218,9 @@ MIT License - See LICENSE file for details
 
 ## 📧 Support
 
-Found a bug? Have a question? [Open an issue](https://github.com/yourusername/simple-rag-pipeline/issues)
+Found a bug? Have a question? [Open an issue](https://github.com/bhoard/RMC-RAG-Chat/issues)
+
 
 ---
 
-**Status**: 🚧 Stages 1-3 Complete | Stage 4 In Development
+**Status**: ✅ All 4 Stages Complete | Ready for RAG Implementation
