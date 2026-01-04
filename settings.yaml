@@ -1,0 +1,50 @@
+# Simple RAG Pipeline Configuration
+# All scripts will read settings from this file
+# DO NOT commit sensitive data to this file if making repo public
+
+# Website Configuration
+site:
+  sitemap_url: "https://example.com/sitemap.xml"  # Change this to your sitemap URL
+  user_agent: "SimpleRAGBot/1.0 (+https://github.com/yourusername/simple-rag-pipeline)"
+  
+# Database Configuration
+database:
+  crawl_ledger: "crawl_ledger.db"  # stores URLs and raw content
+  chunks: "chunks.db"  # stores processed chunks for RAG
+  embeddings: "embeddings.db"  # stores vector embeddings
+
+# Crawl4AI Configuration
+crawler:
+  timeout: 30  # seconds
+  max_retries: 3
+  delay_between_requests: 1  # seconds to be polite between requests
+  batch_size: 10  # number of pages to crawl per run (0 = all pending pages)
+  recrawl_after_days: 30  # recrawl successfully crawled pages after this many days
+  
+  # URL patterns to ignore (supports wildcards)
+  ignore_patterns:
+    - "/admin/*"  # Ignore all admin pages
+    - "/login"    # Ignore specific page
+    - "*/print/*" # Ignore print versions
+    # Add more patterns as needed
+  
+# Processing Configuration
+processing:
+  chunk_size: 500  # target characters per chunk
+  chunk_overlap: 50  # character overlap between chunks
+  min_chunk_size: 100  # minimum chunk size (skip smaller chunks)
+  respect_sentences: true  # try to break at sentence boundaries
+  respect_paragraphs: true  # try to keep paragraphs together when possible
+  
+# Embedding Configuration
+embeddings:
+  model: "all-mpnet-base-v2"  # sentence-transformers model name
+  dimension: 768  # embedding dimension for the model above
+  batch_size: 100  # number of chunks to embed per run (0 = all pending)
+  processing_batch: 32  # chunks to process together in model (for efficiency)
+  
+  # Alternative models you can use:
+  # - "all-MiniLM-L6-v2" (384 dim) - Fast, good quality
+  # - "all-mpnet-base-v2" (768 dim) - Better quality, slower
+  # - "BAAI/bge-small-en-v1.5" (384 dim) - Good for retrieval
+  # - "BAAI/bge-base-en-v1.5" (768 dim) - Better for retrieval
