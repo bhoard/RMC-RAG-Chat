@@ -24,7 +24,8 @@ crawler:
   # URL patterns to ignore (supports wildcards)
   ignore_patterns:
     - "/wp-content/" # Ignore PDFs, images, svgs and so forth
-    - "/events/" # Ignore TEC
+    - "/events/" # Ignore TEC events listing
+    - "/event/" # Ignore TEC individual events
     - "/venues/" # More TEC
     - "/organizer/" # More TEC
     - "/news-tag/" # News Meta 
