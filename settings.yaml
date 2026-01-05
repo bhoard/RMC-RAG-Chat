@@ -4,7 +4,7 @@
 
 # Website Configuration
 site:
-  sitemap_url: "https://example.com/sitemap.xml"  # Change this to your sitemap URL
+  sitemap_url: "https://www.rmc.edu/sitemap.xml"  # Change this to your sitemap URL
   user_agent: "SimpleRAGBot/1.0 (+https://github.com/yourusername/simple-rag-pipeline)"
   
 # Database Configuration
@@ -18,11 +18,17 @@ crawler:
   timeout: 30  # seconds
   max_retries: 3
   delay_between_requests: 1  # seconds to be polite between requests
-  batch_size: 10  # number of pages to crawl per run (0 = all pending pages)
+  batch_size: 200  # number of pages to crawl per run (0 = all pending pages)
   recrawl_after_days: 30  # recrawl successfully crawled pages after this many days
   
   # URL patterns to ignore (supports wildcards)
   ignore_patterns:
+    - "/wp-content/" # Ignore PDFs, images, svgs and so forth
+    - "/events/" # Ignore TEC
+    - "/venues/" # More TEC
+    - "/organizer/" # More TEC
+    - "/news-tag/" # News Meta 
+    - "/wp-admin/" # Ignore all WP admin pages
     - "/admin/*"  # Ignore all admin pages
     - "/login"    # Ignore specific page
     - "*/print/*" # Ignore print versions

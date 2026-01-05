@@ -20,16 +20,49 @@ A straightforward, easy-to-understand RAG (Retrieval-Augmented Generation) pipel
 
 ### 1. Initial Setup
 
+**Recommended: Use the setup script**
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/simple-rag-pipeline.git
 cd simple-rag-pipeline
 
+# Run system setup (installs all system dependencies)
+chmod +x setup.sh
+./setup.sh
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies and Playwright
+make setup
+```
+
+The `setup.sh` script installs:
+- Python 3, pip, venv
+- SQLite3
+- Make, git
+- All Playwright/Chromium system libraries (including handling Ubuntu 24.04's libasound2t64)
+
+**Manual Setup (if you prefer):**
+
+```bash
+# System dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3 python3-pip python3-venv sqlite3 make git
+
+# Playwright dependencies for Ubuntu 24.04
+sudo apt install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+  libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 \
+  libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 \
+  libxshmfence1 libglib2.0-0 libasound2t64
+
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# Install Python packages
 make setup
 ```
 
@@ -59,6 +92,7 @@ simple-rag-pipeline/
 ├── README.md                 # This file
 ├── LICENSE                   # MIT License
 ├── CONTRIBUTING.md           # Contribution guidelines
+├── setup.sh                  # System setup script (Ubuntu)
 ├── settings.yaml             # Configuration file
 ├── Makefile                  # Pipeline management commands
 ├── requirements.txt          # Python dependencies
@@ -218,8 +252,7 @@ MIT License - See LICENSE file for details
 
 ## 📧 Support
 
-Found a bug? Have a question? [Open an issue](https://github.com/bhoard/RMC-RAG-Chat/issues)
-
+Found a bug? Have a question? [Open an issue](https://github.com/yourusername/simple-rag-pipeline/issues)
 
 ---
 

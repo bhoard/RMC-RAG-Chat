@@ -1,4 +1,4 @@
-.PHONY: help menu setup stage1 stage2 stage3 stage4 inspect-urls inspect-db clean stats show-content show-chunks show-embeddings recrawl
+.PHONY: help menu setup stage1 stage2 stage3 stage4 inspect-urls inspect-db clean stats show-content show-chunks show-embeddings recrawl cleanup-errors
 
 # Default target - show menu
 help: menu
@@ -27,6 +27,7 @@ menu:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make recrawl URL=<pattern> - Force recrawl of specific URLs"
+	@echo "  make cleanup-errors        - Remove and reset error pages (429s, etc.)"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Remove all databases and start fresh"
@@ -37,13 +38,26 @@ menu:
 setup:
 	@echo "Setting up RAG pipeline environment..."
 	@echo ""
+	@echo "Checking for system dependencies..."
+	@command -v sqlite3 >/dev/null 2>&1 || { echo "⚠️  sqlite3 not found. Please run ./setup.sh first"; exit 1; }
+	@echo "✓ SQLite3 available"
+	@echo ""
 	@echo "Installing Python dependencies..."
 	pip3 install --upgrade pip
 	pip3 install -r requirements.txt
 	@echo ""
+	@echo "Installing Playwright browsers (this may take a minute)..."
+	playwright install chromium
+	@echo ""
+	@echo "Verifying Playwright system dependencies..."
+	@echo "(If this fails, run: sudo playwright install-deps)"
+	@playwright install-deps 2>/dev/null || echo "⚠️  Note: Playwright deps may need manual install with: sudo playwright install-deps"
+	@echo ""
 	@echo "✓ Setup complete!"
-	@echo "Next step: Edit settings.yaml with your sitemap URL"
-	@echo "Then run: make stage1"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Edit settings.yaml with your sitemap URL"
+	@echo "  2. Run: make stage1"
 
 # Stage 1: Fetch sitemap and populate database
 stage1:
@@ -158,6 +172,11 @@ recrawl:
 	else \
 		python3 recrawl.py "$(URL)"; \
 	fi
+
+# Clean up error pages (429s, short content, etc.)
+cleanup-errors:
+	@echo "Scanning for error pages..."
+	python3 cleanup_errors.py
 
 # Clean up databases and start fresh
 clean:

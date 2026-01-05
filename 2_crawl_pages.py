@@ -117,7 +117,18 @@ async def crawl_url(url, crawler):
         
         # Check if crawl was successful
         if result.success and result.markdown:
-            return True, result.markdown, None
+            # Check for rate limiting in the content
+            content = result.markdown.strip()
+            
+            # Detect rate limiting responses
+            if '429' in content[:100] or 'rate limit' in content[:200].lower() or 'too many requests' in content[:200].lower():
+                return False, None, "Rate limited (429) - slow down crawling"
+            
+            # Check for very short content (might be error pages)
+            if len(content) < 100:
+                return False, None, f"Content too short ({len(content)} chars) - might be error page"
+            
+            return True, content, None
         else:
             error_msg = "No content extracted or crawl failed"
             return False, None, error_msg
@@ -173,6 +184,7 @@ async def crawl_all_urls(urls, conn, delay):
     """
     success_count = 0
     fail_count = 0
+    rate_limited = False
     
     # Create the async crawler
     async with AsyncWebCrawler(verbose=False) as crawler:
@@ -200,12 +212,21 @@ async def crawl_all_urls(urls, conn, delay):
                 update_failure(conn, url, error)
                 fail_count += 1
                 print(f"  ✗ Failed: {error}")
+                
+                # If we hit rate limiting, suggest stopping
+                if "rate limit" in error.lower() or "429" in error:
+                    rate_limited = True
+                    print(f"\n⚠️  Rate limiting detected!")
+                    print(f"  Consider:")
+                    print(f"  1. Increase delay_between_requests in settings.yaml")
+                    print(f"  2. Reduce batch_size in settings.yaml")
+                    print(f"  3. Wait a few minutes before running again")
             
             # Be polite - wait between requests (except for last URL)
             if i < len(urls):
                 await asyncio.sleep(delay)
     
-    return success_count, fail_count
+    return success_count, fail_count, rate_limited
 
 
 def main():
@@ -243,7 +264,7 @@ def main():
     
     # Initialize and run crawler (async)
     print("\nInitializing Crawl4AI crawler...")
-    success_count, fail_count = asyncio.run(crawl_all_urls(urls_to_crawl, conn, delay))
+    success_count, fail_count, rate_limited = asyncio.run(crawl_all_urls(urls_to_crawl, conn, delay))
     
     # Cleanup
     conn.close()
@@ -254,6 +275,14 @@ def main():
     print("=" * 60)
     print(f"Successfully crawled: {success_count}")
     print(f"Failed: {fail_count}")
+    
+    if rate_limited:
+        print(f"\n⚠️  WARNING: Rate limiting detected!")
+        print(f"Update settings.yaml:")
+        print(f"  - Increase delay_between_requests (currently {delay}s)")
+        print(f"  - Decrease batch_size (currently {batch_size})")
+        print(f"Then wait a few minutes before running again.")
+    
     print(f"\nRun 'make stats' to see overall progress")
 
 
