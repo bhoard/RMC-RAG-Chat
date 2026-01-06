@@ -1,10 +1,10 @@
-# Simple RAG Pipeline
+# RMC RAG Pipeline
 
 A straightforward, easy-to-understand RAG (Retrieval-Augmented Generation) pipeline built with Python and SQLite. Perfect for learning or deploying on a small VPS.
 
 ## 🎯 Project Goals
 
-- **Simple & Educational**: Written with junior developers in mind
+- **Simple & Educational**: Written with busy developers in mind
 - **Resource Efficient**: Runs on modest hardware (tested on 4-core i5, 16GB RAM)
 - **Self-Contained**: Uses SQLite (no external database servers needed)
 - **Transparent**: Each pipeline stage is a separate, well-commented script
@@ -272,7 +272,7 @@ python3 5_rag_query.py "Tell me about campus life at RMC"
 Contributions are welcome! This project aims to be educational and accessible. When contributing:
 
 1. Keep code simple and well-commented
-2. Write as if explaining to a junior developer
+2. Write as if explaining to a beginner
 3. Test on modest hardware when possible
 4. Update documentation for any new features
 
