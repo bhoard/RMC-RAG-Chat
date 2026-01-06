@@ -35,6 +35,7 @@ crawler:
     - "/event/*" # Still TEC junk
     - "/profile/*" # Profile embeds
     - "/organization/*" # TEC stuff
+    - "/organizer/*" # TEC junk
     - "/wp-admin/*" # WP admin
     - "/venue/*" # TEC junk 
     - "/admin/*"  # Ignore all admin pages
