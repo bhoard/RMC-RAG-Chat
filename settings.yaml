@@ -30,6 +30,11 @@ crawler:
   
   # URL patterns to ignore (supports wildcards)
   ignore_patterns:
+    - "/events/*"
+    - "/event/*"
+    - "/venue/*"
+    - "/organizer/*"
+    - "/wp-content/*"
     - "/admin/*"  # Ignore all admin pages
     - "/login"    # Ignore specific page
     - "*/print/*" # Ignore print versions
