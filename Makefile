@@ -164,8 +164,9 @@ stats:
 				emb_conn = sqlite3.connect('embeddings.db'); \
 				total_chunks = chunks_conn.execute('SELECT COUNT(*) FROM chunks').fetchone()[0]; \
 				total_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings').fetchone()[0]; \
-				valid_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings WHERE chunk_id IN (SELECT chunk_id FROM chunks.chunks)', (chunks_conn,)).fetchone()[0] if total_chunks > 0 else 0; \
-				print(f'  {valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
+				chunk_ids = set(r[0] for r in chunks_conn.execute('SELECT chunk_id FROM chunks').fetchall()); \
+				valid_embeddings = sum(1 for r in emb_conn.execute('SELECT chunk_id FROM embeddings').fetchall() if r[0] in chunk_ids); \
+				print(f'{valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
 				orphaned = total_embeddings - valid_embeddings; \
 				print(f'  Orphaned embeddings: {orphaned}') if orphaned > 0 else None"; \
 		else \

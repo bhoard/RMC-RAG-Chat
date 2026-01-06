@@ -30,6 +30,13 @@ crawler:
   
   # URL patterns to ignore (supports wildcards)
   ignore_patterns:
+    - "/wp-content/*"
+    - "/events/*" # TEC junk
+    - "/event/*" # Still TEC junk
+    - "/profile/*" # Profile embeds
+    - "/organization/*" # TEC stuff
+    - "/wp-admin/*" # WP admin
+    - "/venue/*" # TEC junk 
     - "/admin/*"  # Ignore all admin pages
     - "/login"    # Ignore specific page
     - "*/print/*" # Ignore print versions
@@ -57,14 +64,19 @@ rag:
   min_similarity: 0.3  # Minimum cosine similarity (0-1)
   
   system_prompt: |
-    You are a helpful assistant for Randolph-Macon College (RMC).
+    You are a helpful admissions counselor assistant for Randolph-Macon College (RMC).
     Answer questions using the provided context from RMC's official websites.
     
     Guidelines:
     - Be accurate and cite specific information when possible
     - If the answer isn't in the context, say so clearly
+    - Do not make up answers that are not in the context
     - Be concise but thorough
     - Use a friendly, informative tone appropriate for prospective students and families
+    - Do not promise anything
+    - Act professionally at all times
+    - If the user is rude or offensive, end the conversation
+
 embeddings:
   model: "all-mpnet-base-v2"  # sentence-transformers model name
   dimension: 768  # embedding dimension for the model above
