@@ -24,8 +24,8 @@ A straightforward, easy-to-understand RAG (Retrieval-Augmented Generation) pipel
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/simple-rag-pipeline.git
-cd simple-rag-pipeline
+git clone https://github.com/bhoard/RMC-RAG-Chat.git
+cd RMC-RAG-Chat
 
 # Run system setup (installs all system dependencies)
 chmod +x setup.sh
@@ -68,12 +68,17 @@ make setup
 
 ### 2. Configure Your Site
 
-Edit `settings.yaml` and update the sitemap URL:
+Edit `settings.yaml` and add your sitemap URLs:
 
 ```yaml
 site:
-  sitemap_url: "https://your-site.com/sitemap.xml"
+  sitemap_urls:
+    - "https://www.yoursite.com/sitemap.xml"
+    - "https://blog.yoursite.com/sitemap.xml"
+    # Add as many sitemaps as needed
 ```
+
+You can add multiple sitemaps from different domains - they'll all be combined into one database.
 
 ### 3. Run the Pipeline
 
@@ -158,7 +163,7 @@ Run `make` or `make menu` to see all available commands:
 ## 🛠️ Pipeline Stages
 
 ### Stage 1: Fetch Sitemap ✅
-Fetches your sitemap.xml and extracts all URLs into the database.
+Fetches your sitemap(s) and extracts all URLs into the database. Supports multiple sitemaps from different domains.
 
 ```bash
 make stage1
@@ -252,7 +257,7 @@ MIT License - See LICENSE file for details
 
 ## 📧 Support
 
-Found a bug? Have a question? [Open an issue](https://github.com/yourusername/simple-rag-pipeline/issues)
+Found a bug? Have a question? [Open an issue](https://github.com/bhoard/RMC-RAG-Chat/issues)
 
 ---
 

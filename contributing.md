@@ -44,7 +44,7 @@ def fetch_sitemap(sitemap_url, user_agent):
 ```bash
 # Fork and clone the repository
 git clone https://github.com/bhoard/RMC-RAG-Chat.git
-cd simple-rag-pipeline
+cd RMC-RAG-Chat
 
 # Create a virtual environment
 python3 -m venv venv

@@ -126,12 +126,23 @@ def insert_urls(conn, urls):
 def main():
     """Main execution function."""
     print("=" * 60)
-    print("Stage 1: Fetching Sitemap and Populating Database")
+    print("Stage 1: Fetching Sitemap(s) and Populating Database")
     print("=" * 60)
     
     # Load configuration
     settings = load_settings()
-    sitemap_url = settings['site']['sitemap_url']
+    
+    # Support both old format (single sitemap_url) and new format (list of sitemap_urls)
+    if 'sitemap_urls' in settings['site']:
+        sitemap_urls = settings['site']['sitemap_urls']
+    elif 'sitemap_url' in settings['site']:
+        # Backward compatibility with old config format
+        sitemap_urls = [settings['site']['sitemap_url']]
+    else:
+        print("✗ No sitemap URLs found in settings.yaml")
+        print("Please add 'sitemap_urls' to the 'site' section")
+        return
+    
     user_agent = settings['site']['user_agent']
     db_path = settings['database']['crawl_ledger']
     
@@ -139,33 +150,63 @@ def main():
     conn = create_database(db_path)
     print(f"✓ Database ready: {db_path}")
     
-    # Fetch the sitemap
-    xml_content = fetch_sitemap(sitemap_url, user_agent)
-    if not xml_content:
-        print("✗ Failed to fetch sitemap. Exiting.")
-        return
+    # Process each sitemap
+    total_new = 0
+    total_existing = 0
+    total_urls = 0
     
-    print("✓ Sitemap downloaded successfully")
+    for i, sitemap_url in enumerate(sitemap_urls, 1):
+        print(f"\n{'=' * 60}")
+        print(f"Processing Sitemap {i}/{len(sitemap_urls)}")
+        print(f"{'=' * 60}")
+        print(f"URL: {sitemap_url}")
+        
+        # Fetch the sitemap
+        xml_content = fetch_sitemap(sitemap_url, user_agent)
+        if not xml_content:
+            print("✗ Failed to fetch sitemap. Skipping.")
+            continue
+        
+        print("✓ Sitemap downloaded successfully")
+        
+        # Parse URLs from sitemap
+        urls = parse_sitemap(xml_content)
+        print(f"✓ Found {len(urls)} URLs in sitemap")
+        
+        if not urls:
+            print("✗ No URLs found in sitemap. Skipping.")
+            continue
+        
+        # Insert URLs into database
+        new_count, existing_count = insert_urls(conn, urls)
+        print(f"✓ Added {new_count} new URLs")
+        print(f"✓ Skipped {existing_count} existing URLs")
+        
+        # Update totals
+        total_new += new_count
+        total_existing += existing_count
+        total_urls += len(urls)
+        
+        # Show some sample URLs from this sitemap
+        if new_count > 0:
+            print(f"\nSample URLs from this sitemap:")
+            for url in urls[:3]:
+                print(f"  - {url}")
     
-    # Parse URLs from sitemap
-    urls = parse_sitemap(xml_content)
-    print(f"✓ Found {len(urls)} URLs in sitemap")
+    # Final summary
+    print("\n" + "=" * 60)
+    print("All Sitemaps Processed!")
+    print("=" * 60)
+    print(f"Sitemaps processed: {len(sitemap_urls)}")
+    print(f"Total URLs found: {total_urls}")
+    print(f"New URLs added: {total_new}")
+    print(f"Already existing: {total_existing}")
     
-    if not urls:
-        print("✗ No URLs found in sitemap. Exiting.")
-        return
-    
-    # Insert URLs into database
-    new_count, existing_count = insert_urls(conn, urls)
-    print(f"✓ Added {new_count} new URLs")
-    print(f"✓ Skipped {existing_count} existing URLs")
-    
-    # Show some sample URLs
-    print("\nSample URLs added:")
+    # Show overall database stats
     cursor = conn.cursor()
-    cursor.execute('SELECT url FROM pages LIMIT 5')
-    for row in cursor.fetchall():
-        print(f"  - {row[0]}")
+    cursor.execute('SELECT COUNT(*) FROM pages')
+    total_in_db = cursor.fetchone()[0]
+    print(f"\nTotal URLs in database: {total_in_db}")
     
     # Close database connection
     conn.close()
