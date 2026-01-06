@@ -30,11 +30,6 @@ crawler:
   
   # URL patterns to ignore (supports wildcards)
   ignore_patterns:
-    - "/events/*"
-    - "/event/*"
-    - "/venue/*"
-    - "/organizer/*"
-    - "/wp-content/*"
     - "/admin/*"  # Ignore all admin pages
     - "/login"    # Ignore specific page
     - "*/print/*" # Ignore print versions
@@ -48,7 +43,28 @@ processing:
   respect_sentences: true  # try to break at sentence boundaries
   respect_paragraphs: true  # try to keep paragraphs together when possible
   
-# Embedding Configuration
+# RAG Query Configuration
+rag:
+  # Get your API key from: https://console.anthropic.com/
+  # You can set this here or use environment variable: ANTHROPIC_API_KEY
+  claude_api_key: ""  # Leave empty to use ANTHROPIC_API_KEY env var
+  
+  model: "claude-sonnet-4-20250514"  # Claude Sonnet 4
+  max_tokens: 2000  # Max response length
+  temperature: 0.7  # 0.0 = focused, 1.0 = creative
+  
+  top_k_chunks: 5  # How many similar chunks to retrieve
+  min_similarity: 0.3  # Minimum cosine similarity (0-1)
+  
+  system_prompt: |
+    You are a helpful assistant for Randolph-Macon College (RMC).
+    Answer questions using the provided context from RMC's official websites.
+    
+    Guidelines:
+    - Be accurate and cite specific information when possible
+    - If the answer isn't in the context, say so clearly
+    - Be concise but thorough
+    - Use a friendly, informative tone appropriate for prospective students and families
 embeddings:
   model: "all-mpnet-base-v2"  # sentence-transformers model name
   dimension: 768  # embedding dimension for the model above

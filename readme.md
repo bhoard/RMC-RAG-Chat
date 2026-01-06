@@ -97,6 +97,7 @@ simple-rag-pipeline/
 ├── README.md                 # This file
 ├── LICENSE                   # MIT License
 ├── CONTRIBUTING.md           # Contribution guidelines
+├── API_SETUP.md              # Guide to getting Claude API key
 ├── setup.sh                  # System setup script (Ubuntu)
 ├── settings.yaml             # Configuration file
 ├── Makefile                  # Pipeline management commands
@@ -104,8 +105,11 @@ simple-rag-pipeline/
 ├── 1_fetch_sitemap.py       # Stage 1: Fetch URLs from sitemap
 ├── 2_crawl_pages.py         # Stage 2: Crawl and extract content
 ├── recrawl.py               # Utility: Force recrawl URLs
+├── cleanup_errors.py        # Utility: Clean up error pages
+├── cleanup_orphans.py       # Utility: Remove orphaned embeddings
 ├── 3_process_content.py     # Stage 3: Chunk and process text
 ├── 4_generate_embeddings.py # Stage 4: Create vector embeddings
+├── 5_rag_query.py           # Stage 5: RAG query with Claude
 ├── crawl_ledger.db          # SQLite: URLs and raw content
 ├── chunks.db                # SQLite: Processed chunks
 └── embeddings.db            # SQLite: Vector embeddings
@@ -119,12 +123,15 @@ Run `make` or `make menu` to see all available commands:
 - `make stage1` - Fetch sitemap URLs
 - `make stage2` - Crawl pages with Crawl4AI
 - `make stage4` - Generate embeddings
+- `make query Q="..."` - Ask a question (requires Claude API key)
 - `make stats` - Show database statistics
 - `make show-content` - Preview crawled content
 - `make show-chunks` - Preview chunks
 - `make show-embeddings` - Preview embeddings
 - `make inspect-db` - Open SQLite shell
 - `make recrawl URL='<pattern>'` - Force recrawl specific URLs
+- `make cleanup-errors` - Remove and reset error pages (429s, etc.)
+- `make cleanup-orphans` - Remove orphaned embeddings
 - `make clean` - Remove all databases
 
 ## 🗄️ Database Schema
@@ -236,6 +243,30 @@ make show-embeddings
 # Then run: make stage4
 ```
 
+### Stage 5: RAG Query System ✅
+Ask questions and get AI-powered answers using Claude with retrieved context.
+
+**Setup:**
+1. Get a Claude API key from [Anthropic Console](https://console.anthropic.com/)
+2. Set environment variable: `export ANTHROPIC_API_KEY='your-key'`
+3. See [API_SETUP.md](API_SETUP.md) for detailed instructions
+
+**Usage:**
+```bash
+# Ask a question
+make query Q="What are RMC's admission requirements?"
+
+# Or directly
+python3 5_rag_query.py "Tell me about campus life at RMC"
+```
+
+**Features:**
+- Semantic search finds relevant content
+- Claude generates accurate answers with sources
+- Configurable retrieval (top-k chunks, similarity threshold)
+- Customizable system prompts
+- Shows relevance scores and sources
+
 ## 🤝 Contributing
 
 Contributions are welcome! This project aims to be educational and accessible. When contributing:
@@ -261,4 +292,4 @@ Found a bug? Have a question? [Open an issue](https://github.com/bhoard/RMC-RAG-
 
 ---
 
-**Status**: ✅ All 4 Stages Complete | Ready for RAG Implementation
+**Status**: ✅ Complete RAG System | All 5 Stages Operational

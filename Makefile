@@ -1,4 +1,4 @@
-.PHONY: help menu setup stage1 stage2 stage3 stage4 inspect-urls inspect-db clean stats show-content show-chunks show-embeddings recrawl cleanup-errors
+.PHONY: help menu setup stage1 stage2 stage3 stage4 query inspect-urls inspect-db clean stats show-content show-chunks show-embeddings recrawl cleanup-errors cleanup-orphans
 
 # Default target - show menu
 help: menu
@@ -16,6 +16,7 @@ menu:
 	@echo "  make stage2         - Crawl pages with Crawl4AI"
 	@echo "  make stage3         - Process and chunk content"
 	@echo "  make stage4         - Generate embeddings"
+	@echo "  make query Q=\"...\" - Ask a question (RAG query)"
 	@echo ""
 	@echo "Database Inspection:"
 	@echo "  make inspect-urls   - Show all URLs in crawl ledger"
@@ -28,6 +29,7 @@ menu:
 	@echo "Utilities:"
 	@echo "  make recrawl URL=<pattern> - Force recrawl of specific URLs"
 	@echo "  make cleanup-errors        - Remove and reset error pages (429s, etc.)"
+	@echo "  make cleanup-orphans       - Remove orphaned embeddings"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Remove all databases and start fresh"
@@ -79,6 +81,20 @@ stage4:
 	@echo "Running Stage 4: Generate Embeddings..."
 	python3 4_generate_embeddings.py
 
+# RAG Query - Ask a question
+query:
+	@if [ -z "$(Q)" ]; then \
+		echo "Usage: make query Q=\"Your question here\""; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make query Q=\"What are RMC's admission requirements?\""; \
+		echo "  make query Q=\"Tell me about campus life at Randolph-Macon\""; \
+		echo ""; \
+		echo "Note: Requires ANTHROPIC_API_KEY environment variable"; \
+	else \
+		python3 5_rag_query.py "$(Q)"; \
+	fi
+
 # Inspect URLs in the database
 inspect-urls:
 	@echo "All URLs in crawl_ledger.db:"
@@ -107,8 +123,19 @@ stats:
 	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE date_success IS NOT NULL;"
 	@echo "  Failed crawls:"
 	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE fail_count > 0;"
-	@echo "  Pending crawls:"
-	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE date_success IS NULL AND fail_count = 0;"
+	@echo "  Pending crawls (not ignored):"
+	@python3 -c "import sqlite3, yaml; \
+		settings = yaml.safe_load(open('settings.yaml')); \
+		ignore_patterns = settings['crawler']['ignore_patterns']; \
+		conn = sqlite3.connect('crawl_ledger.db'); \
+		cursor = conn.cursor(); \
+		cursor.execute('SELECT url FROM pages WHERE date_success IS NULL AND fail_count = 0'); \
+		urls = [r[0] for r in cursor.fetchall()]; \
+		from fnmatch import fnmatch; \
+		pending = [u for u in urls if not any(fnmatch(u, f'*{p}*') for p in ignore_patterns)]; \
+		ignored = len(urls) - len(pending); \
+		print(f'  {len(pending)}'); \
+		print(f'  Ignored by filters: {ignored}') if ignored > 0 else None"
 	@echo ""
 	@echo "Chunks Database (chunks.db):"
 	@if [ -f chunks.db ]; then \
@@ -130,8 +157,20 @@ stats:
 		sqlite3 embeddings.db "SELECT DISTINCT model_name FROM embeddings LIMIT 1;"; \
 		echo "  Dimensions:"; \
 		sqlite3 embeddings.db "SELECT DISTINCT model_dimension FROM embeddings LIMIT 1;"; \
-		echo "  Embedding coverage:"; \
-		sqlite3 embeddings.db "SELECT ROUND(CAST(COUNT(*) AS FLOAT) / (SELECT COUNT(*) FROM chunks) * 100, 1) || '%' FROM embeddings;" 2>/dev/null || echo "  (run stage3 first)"; \
+		echo "  Chunks with embeddings:"; \
+		if [ -f chunks.db ]; then \
+			python3 -c "import sqlite3; \
+				chunks_conn = sqlite3.connect('chunks.db'); \
+				emb_conn = sqlite3.connect('embeddings.db'); \
+				total_chunks = chunks_conn.execute('SELECT COUNT(*) FROM chunks').fetchone()[0]; \
+				total_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings').fetchone()[0]; \
+				valid_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings WHERE chunk_id IN (SELECT chunk_id FROM chunks.chunks)', (chunks_conn,)).fetchone()[0] if total_chunks > 0 else 0; \
+				print(f'  {valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
+				orphaned = total_embeddings - valid_embeddings; \
+				print(f'  Orphaned embeddings: {orphaned}') if orphaned > 0 else None"; \
+		else \
+			sqlite3 embeddings.db "SELECT COUNT(*) FROM embeddings;"; \
+		fi; \
 	else \
 		echo "  No embeddings database yet (run stage4)"; \
 	fi
@@ -177,6 +216,11 @@ recrawl:
 cleanup-errors:
 	@echo "Scanning for error pages..."
 	python3 cleanup_errors.py
+
+# Clean up orphaned embeddings
+cleanup-orphans:
+	@echo "Scanning for orphaned embeddings..."
+	python3 cleanup_orphans.py
 
 # Clean up databases and start fresh
 clean:
