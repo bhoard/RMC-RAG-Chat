@@ -1,4 +1,4 @@
-.PHONY: help menu setup stage1 stage2 stage3 stage4 query inspect-urls inspect-db clean stats show-content show-chunks show-embeddings recrawl cleanup-errors cleanup-orphans
+.PHONY: help menu setup stage1 stage2 stage3 stage4 query inspect-urls inspect-db clean stats show-content show-chunks show-embeddings add-url add-urls recrawl cleanup-errors cleanup-orphans
 
 # Default target - show menu
 help: menu
@@ -27,6 +27,8 @@ menu:
 	@echo "  make show-embeddings - Preview embeddings"
 	@echo ""
 	@echo "Utilities:"
+	@echo "  make add-url URL=<url>     - Add single external URL to crawl"
+	@echo "  make add-urls FILE=<file>  - Add URLs from file"
 	@echo "  make recrawl URL=<pattern> - Force recrawl of specific URLs"
 	@echo "  make cleanup-errors        - Remove and reset error pages (429s, etc.)"
 	@echo "  make cleanup-orphans       - Remove orphaned embeddings"
@@ -200,6 +202,34 @@ show-embeddings:
 		sqlite3 embeddings.db "SELECT e.embedding_id, e.chunk_id, e.model_name, e.model_dimension, substr(e.embedding_vector, 1, 100) || '...' as vector_preview FROM embeddings e LIMIT 5;"; \
 	else \
 		echo "No embeddings database yet (run stage4)"; \
+	fi
+
+# Add external URLs
+add-url:
+	@if [ -z "$(URL)" ]; then \
+		echo "Usage: make add-url URL='<url>'"; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make add-url URL='https://www.ashlandva.gov/about'"; \
+		echo "  make add-url URL='https://partner-site.org/page'"; \
+	else \
+		python3 add_urls.py "$(URL)"; \
+	fi
+
+# Add URLs from file
+add-urls:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make add-urls FILE='<filename>'"; \
+		echo ""; \
+		echo "Example:"; \
+		echo "  make add-urls FILE='external_urls.txt'"; \
+		echo ""; \
+		echo "File format (one URL per line):"; \
+		echo "  https://www.ashlandva.gov/about"; \
+		echo "  https://www.ashlandva.gov/services"; \
+		echo "  # Comments are allowed"; \
+	else \
+		python3 add_urls.py --file "$(FILE)"; \
 	fi
 
 # Force recrawl specific URLs
