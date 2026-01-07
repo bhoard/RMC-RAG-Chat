@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This project aims to be educational
 
 ## 🎯 Project Philosophy
 
-1. **Simplicity First**: Code should be readable by junior developers
+1. **Simplicity First**: Code should be readable by beginners
 2. **Well Documented**: Every function needs clear docstrings
 3. **Educational Value**: Prefer clarity over cleverness
 4. **Resource Conscious**: Test on modest hardware when possible
@@ -13,7 +13,7 @@ Thank you for your interest in contributing! This project aims to be educational
 
 ### Python Code
 
-- **Keep it simple**: Write code a junior developer would write
+- **Keep it simple**: Write code a beginner developer would write
 - **Comment generously**: Explain the "why", not just the "what"
 - **Use descriptive names**: `url_list` not `ul`, `fetch_sitemap()` not `fs()`
 - **One function, one purpose**: Each function should do exactly one thing

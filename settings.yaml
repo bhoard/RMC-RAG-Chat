@@ -12,7 +12,8 @@ site:
     - "https://rmcathletics.com/sitemap.xml"
     # Add more sitemaps as needed
   
-  user_agent: "SimpleRAGBot/1.0 (+https://github.com/bhoard/RMC-RAG-Chat)"
+  user_agent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+  # user_agent: "SimpleRAGBot/1.0 (+https://github.com/bhoard/RMC-RAG-Chat)"
   
 # Database Configuration
 database:
