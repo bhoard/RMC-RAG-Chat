@@ -36,3 +36,4 @@ settings.local.yaml
 dist/
 build/
 *.egg-info/
+misc/

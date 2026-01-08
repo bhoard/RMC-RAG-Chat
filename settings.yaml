@@ -7,9 +7,9 @@ site:
   # List of sitemap URLs to crawl
   # You can add multiple sitemaps from different domains
   sitemap_urls:
-    - "https://www.rmc.edu/sitemap.xml"
-    - "https://catalog.rmc.edu/sitemap.xml"
-    - "https://rmcathletics.com/sitemap.xml"
+    - "https://digitalag.osu.edu/sitemap.xml"
+    # - "https://catalog.rmc.edu/sitemap.xml"
+    # - "https://rmcathletics.com/sitemap.xml"
     # Add more sitemaps as needed
   
   user_agent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
@@ -43,6 +43,8 @@ crawler:
     - "/admin/*"  # Ignore all admin pages
     - "/login"    # Ignore specific page
     - "*/print/*" # Ignore print versions
+    - "/search/*"
+    - "/user/*"
     # Add more patterns as needed
   
 # Processing Configuration
@@ -67,8 +69,8 @@ rag:
   min_similarity: 0.3  # Minimum cosine similarity (0-1)
   
   system_prompt: |
-    You are a helpful admissions counselor assistant for Randolph-Macon College (RMC).
-    Answer questions using the provided context from RMC's official websites.
+    You are a helpful expert on helping farmers make the most of precision and digital ag technologies.
+    Answer questions using the provided context from the official digitalag website.
     
     Guidelines:
     - Be accurate and cite specific information when possible
