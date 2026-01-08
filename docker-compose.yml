@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: ubuntu_python_env
+    volumes:
+      - .:/app
+    stdin_open: true # Equivalent to -i
+    tty: true        # Equivalent to -t
+    working_dir: /app
