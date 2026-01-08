@@ -18,6 +18,23 @@ A straightforward, easy-to-understand RAG (Retrieval-Augmented Generation) pipel
 
 ## 🚀 Quick Start
 
+### 0. If using dockerfile:
+- Edit `settings.yaml` with sitemap URLs and API key.
+- Start:
+  - `docker compose up -d --build`
+  - Notes:
+    - Builds an image with all OS/system, Python, and Puppeteer/Chromium dependencies.
+    - Root project files are mounted into container via `docker-compose.yml`.
+- Once running:
+  - Exec into container: 
+    - Find container name with `docker ps`. S
+      - Something like: "*ubuntu_python_env*".
+    - `docker exec -it ubuntu_python_env /bin/bash`
+  - Run commands:
+    - Ex: `make stage1`, etc.
+- Stop:
+  - `docker compose down`
+
 ### 1. Initial Setup
 
 **Recommended: Use the setup script**
