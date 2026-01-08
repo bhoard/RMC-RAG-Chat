@@ -14,5 +14,9 @@ sentence-transformers>=2.2.0  # For Stage 4: generating embeddings
 numpy>=1.24.0                 # For Stage 4: vector operations
 torch>=2.0.0                  # Required by sentence-transformers
 
+# RAG and LLM integration
+anthropic>=0.39.0             # For Stage 5: Claude API
+python-dotenv>=1.0.0          # For Stage 5: environment variables
+
 # Optional: Progress bars and logging
 # tqdm>=4.65.0                  # Progress bars for long operations
