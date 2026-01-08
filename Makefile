@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 .PHONY: help menu setup stage1 stage2 stage3 stage4 query inspect-urls inspect-db clean stats show-content show-chunks show-embeddings add-url add-urls recrawl cleanup-errors cleanup-orphans
 
 # Default target - show menu
@@ -127,17 +129,17 @@ stats:
 	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE fail_count > 0;"
 	@echo "  Pending crawls (not ignored):"
 	@python3 -c "import sqlite3, yaml; \
-		settings = yaml.safe_load(open('settings.yaml')); \
-		ignore_patterns = settings['crawler']['ignore_patterns']; \
-		conn = sqlite3.connect('crawl_ledger.db'); \
-		cursor = conn.cursor(); \
-		cursor.execute('SELECT url FROM pages WHERE date_success IS NULL AND fail_count = 0'); \
-		urls = [r[0] for r in cursor.fetchall()]; \
-		from fnmatch import fnmatch; \
-		pending = [u for u in urls if not any(fnmatch(u, f'*{p}*') for p in ignore_patterns)]; \
-		ignored = len(urls) - len(pending); \
-		print(f'  {len(pending)}'); \
-		print(f'  Ignored by filters: {ignored}') if ignored > 0 else None"
+settings = yaml.safe_load(open('settings.yaml')); \
+ignore_patterns = settings['crawler']['ignore_patterns']; \
+conn = sqlite3.connect('crawl_ledger.db'); \
+cursor = conn.cursor(); \
+cursor.execute('SELECT url FROM pages WHERE date_success IS NULL AND fail_count = 0'); \
+urls = [r[0] for r in cursor.fetchall()]; \
+from fnmatch import fnmatch; \
+pending = [u for u in urls if not any(fnmatch(u, f'*{p}*') for p in ignore_patterns)]; \
+ignored = len(urls) - len(pending); \
+print(f'  {len(pending)}'); \
+print(f'  Ignored by filters: {ignored}') if ignored > 0 else None"
 	@echo ""
 	@echo "Chunks Database (chunks.db):"
 	@if [ -f chunks.db ]; then \
@@ -162,15 +164,15 @@ stats:
 		echo "  Chunks with embeddings:"; \
 		if [ -f chunks.db ]; then \
 			python3 -c "import sqlite3; \
-				chunks_conn = sqlite3.connect('chunks.db'); \
-				emb_conn = sqlite3.connect('embeddings.db'); \
-				total_chunks = chunks_conn.execute('SELECT COUNT(*) FROM chunks').fetchone()[0]; \
-				total_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings').fetchone()[0]; \
-				chunk_ids = set(r[0] for r in chunks_conn.execute('SELECT chunk_id FROM chunks').fetchall()); \
-				valid_embeddings = sum(1 for r in emb_conn.execute('SELECT chunk_id FROM embeddings').fetchall() if r[0] in chunk_ids); \
-				print(f'{valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
-				orphaned = total_embeddings - valid_embeddings; \
-				print(f'  Orphaned embeddings: {orphaned}') if orphaned > 0 else None"; \
+chunks_conn = sqlite3.connect('chunks.db'); \
+emb_conn = sqlite3.connect('embeddings.db'); \
+total_chunks = chunks_conn.execute('SELECT COUNT(*) FROM chunks').fetchone()[0]; \
+total_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings').fetchone()[0]; \
+chunk_ids = set(r[0] for r in chunks_conn.execute('SELECT chunk_id FROM chunks').fetchall()); \
+valid_embeddings = sum(1 for r in emb_conn.execute('SELECT chunk_id FROM embeddings').fetchall() if r[0] in chunk_ids); \
+print(f'{valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
+orphaned = total_embeddings - valid_embeddings; \
+print(f'  Orphaned embeddings: {orphaned}') if orphaned > 0 else None"; \
 		else \
 			sqlite3 embeddings.db "SELECT COUNT(*) FROM embeddings;"; \
 		fi; \
@@ -256,6 +258,6 @@ cleanup-orphans:
 # Clean up databases and start fresh
 clean:
 	@echo "⚠️  WARNING: This will DELETE all databases!"
-	@echo "Are you sure you want to continue? [y/N] " && read ans && [ ${ans:-N} = y ]
+	@echo -n "Are you sure you want to continue? [y/N] " && read ans && [ "$${ans:-N}" = "y" ]
 	@rm -f crawl_ledger.db chunks.db vector_store.db
 	@echo "✓ Databases removed"
