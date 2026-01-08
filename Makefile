@@ -1,5 +1,3 @@
-SHELL := /bin/bash
-
 .PHONY: help menu setup stage1 stage2 stage3 stage4 query inspect-urls inspect-db clean stats show-content show-chunks show-embeddings add-url add-urls recrawl cleanup-errors cleanup-orphans
 
 # Default target - show menu
@@ -52,10 +50,18 @@ setup:
 	pip3 install --upgrade pip
 	pip3 install -r requirements.txt
 	@echo ""
-	@echo "Installing Playwright browsers..."
+	@echo "Installing Playwright browsers (this may take a minute)..."
 	playwright install chromium
 	@echo ""
+	@echo "Verifying Playwright system dependencies..."
+	@echo "(If this fails, run: sudo playwright install-deps)"
+	@playwright install-deps 2>/dev/null || echo "⚠️  Note: Playwright deps may need manual install with: sudo playwright install-deps"
+	@echo ""
 	@echo "✓ Setup complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Edit settings.yaml with your sitemap URL"
+	@echo "  2. Run: make stage1"
 
 # Stage 1: Fetch sitemap and populate database
 stage1:
@@ -81,6 +87,12 @@ stage4:
 query:
 	@if [ -z "$(Q)" ]; then \
 		echo "Usage: make query Q=\"Your question here\""; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make query Q=\"What are RMC's admission requirements?\""; \
+		echo "  make query Q=\"Tell me about campus life at Randolph-Macon\""; \
+		echo ""; \
+		echo "Note: Requires ANTHROPIC_API_KEY environment variable"; \
 	else \
 		python3 5_rag_query.py "$(Q)"; \
 	fi
@@ -93,6 +105,13 @@ inspect-urls:
 
 # Open interactive SQLite shell
 inspect-db:
+	@echo "Opening crawl_ledger.db in SQLite shell..."
+	@echo "Useful commands:"
+	@echo "  .tables          - List all tables"
+	@echo "  .schema pages    - Show table structure"
+	@echo "  SELECT * FROM pages LIMIT 10; - View sample data"
+	@echo "  .quit            - Exit shell"
+	@echo ""
 	@sqlite3 crawl_ledger.db
 
 # Show database statistics
@@ -100,35 +119,143 @@ stats:
 	@echo "Database Statistics:"
 	@echo "================================================"
 	@echo "Crawl Ledger (crawl_ledger.db):"
-	@echo -n "  Total URLs: "
+	@echo "  Total URLs:"
 	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages;"
-	@echo -n "  Successfully crawled: "
+	@echo "  Successfully crawled:"
 	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE date_success IS NOT NULL;"
+	@echo "  Failed crawls:"
+	@sqlite3 crawl_ledger.db "SELECT COUNT(*) FROM pages WHERE fail_count > 0;"
+	@echo "  Pending crawls (not ignored):"
+	@python3 -c "import sqlite3, yaml; \
+		settings = yaml.safe_load(open('settings.yaml')); \
+		ignore_patterns = settings['crawler']['ignore_patterns']; \
+		conn = sqlite3.connect('crawl_ledger.db'); \
+		cursor = conn.cursor(); \
+		cursor.execute('SELECT url FROM pages WHERE date_success IS NULL AND fail_count = 0'); \
+		urls = [r[0] for r in cursor.fetchall()]; \
+		from fnmatch import fnmatch; \
+		pending = [u for u in urls if not any(fnmatch(u, f'*{p}*') for p in ignore_patterns)]; \
+		ignored = len(urls) - len(pending); \
+		print(f'  {len(pending)}'); \
+		print(f'  Ignored by filters: {ignored}') if ignored > 0 else None"
 	@echo ""
+	@echo "Chunks Database (chunks.db):"
 	@if [ -f chunks.db ]; then \
-		echo "Chunks Database (chunks.db):"; \
-		echo -n "  Total chunks: "; \
+		echo "  Total chunks:"; \
 		sqlite3 chunks.db "SELECT COUNT(*) FROM chunks;"; \
-	fi
-	@if [ -f embeddings.db ]; then \
-		echo "Embeddings Database (embeddings.db):"; \
-		echo -n "  Total embeddings: "; \
-		sqlite3 embeddings.db "SELECT COUNT(*) FROM embeddings;"; \
-	fi
-
-# Clean up databases and start fresh
-clean:
-	@echo "⚠️  WARNING: This will DELETE all databases!"
-	@read -p "Are you sure you want to continue? [y/N] " ans; \
-	if [[ "$$ans" == "y" || "$$ans" == "Y" ]]; then \
-		rm -f crawl_ledger.db chunks.db embeddings.db vector_store.db; \
-		echo "✓ Databases removed"; \
+		echo "  Unique pages chunked:"; \
+		sqlite3 chunks.db "SELECT COUNT(DISTINCT url) FROM chunks;"; \
+		echo "  Average chunks per page:"; \
+		sqlite3 chunks.db "SELECT ROUND(AVG(chunk_count), 1) FROM (SELECT COUNT(*) as chunk_count FROM chunks GROUP BY url);"; \
 	else \
-		echo "Operation cancelled."; \
+		echo "  No chunks database yet (run stage3)"; \
+	fi
+	@echo ""
+	@echo "Embeddings Database (embeddings.db):"
+	@if [ -f embeddings.db ]; then \
+		echo "  Total embeddings:"; \
+		sqlite3 embeddings.db "SELECT COUNT(*) FROM embeddings;"; \
+		echo "  Model used:"; \
+		sqlite3 embeddings.db "SELECT DISTINCT model_name FROM embeddings LIMIT 1;"; \
+		echo "  Dimensions:"; \
+		sqlite3 embeddings.db "SELECT DISTINCT model_dimension FROM embeddings LIMIT 1;"; \
+		echo "  Chunks with embeddings:"; \
+		if [ -f chunks.db ]; then \
+			python3 -c "import sqlite3; \
+				chunks_conn = sqlite3.connect('chunks.db'); \
+				emb_conn = sqlite3.connect('embeddings.db'); \
+				total_chunks = chunks_conn.execute('SELECT COUNT(*) FROM chunks').fetchone()[0]; \
+				total_embeddings = emb_conn.execute('SELECT COUNT(*) FROM embeddings').fetchone()[0]; \
+				chunk_ids = set(r[0] for r in chunks_conn.execute('SELECT chunk_id FROM chunks').fetchall()); \
+				valid_embeddings = sum(1 for r in emb_conn.execute('SELECT chunk_id FROM embeddings').fetchall() if r[0] in chunk_ids); \
+				print(f'{valid_embeddings}/{total_chunks} ({round(valid_embeddings/total_chunks*100,1) if total_chunks > 0 else 0}%)'); \
+				orphaned = total_embeddings - valid_embeddings; \
+				print(f'  Orphaned embeddings: {orphaned}') if orphaned > 0 else None"; \
+		else \
+			sqlite3 embeddings.db "SELECT COUNT(*) FROM embeddings;"; \
+		fi; \
+	else \
+		echo "  No embeddings database yet (run stage4)"; \
 	fi
 
 # Preview crawled content
 show-content:
+	@echo "Sample Crawled Content (first 500 chars):"
+	@echo "================================================"
 	@sqlite3 crawl_ledger.db "SELECT url, substr(cleaned_text, 1, 500) FROM pages WHERE cleaned_text IS NOT NULL LIMIT 3;"
 
-# Utility targets
+# Preview chunks
+show-chunks:
+	@echo "Sample Chunks:"
+	@echo "================================================"
+	@if [ -f chunks.db ]; then \
+		sqlite3 chunks.db "SELECT url, chunk_index, chunk_size, token_count, heading_context, substr(chunk_text, 1, 200) FROM chunks LIMIT 5;"; \
+	else \
+		echo "No chunks database yet (run stage3)"; \
+	fi
+
+# Preview embeddings
+show-embeddings:
+	@echo "Sample Embeddings:"
+	@echo "================================================"
+	@if [ -f embeddings.db ]; then \
+		sqlite3 embeddings.db "SELECT e.embedding_id, e.chunk_id, e.model_name, e.model_dimension, substr(e.embedding_vector, 1, 100) || '...' as vector_preview FROM embeddings e LIMIT 5;"; \
+	else \
+		echo "No embeddings database yet (run stage4)"; \
+	fi
+
+# Add external URLs
+add-url:
+	@if [ -z "$(URL)" ]; then \
+		echo "Usage: make add-url URL='<url>'"; \
+		echo ""; \
+		echo "Examples:"; \
+		echo "  make add-url URL='https://www.ashlandva.gov/about'"; \
+		echo "  make add-url URL='https://partner-site.org/page'"; \
+	else \
+		python3 add_urls.py "$(URL)"; \
+	fi
+
+# Add URLs from file
+add-urls:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make add-urls FILE='<filename>'"; \
+		echo ""; \
+		echo "Example:"; \
+		echo "  make add-urls FILE='external_urls.txt'"; \
+		echo ""; \
+		echo "File format (one URL per line):"; \
+		echo "  https://www.ashlandva.gov/about"; \
+		echo "  https://www.ashlandva.gov/services"; \
+		echo "  # Comments are allowed"; \
+	else \
+		python3 add_urls.py --file "$(FILE)"; \
+	fi
+
+# Force recrawl specific URLs
+recrawl:
+	@if [ -z "$(URL)" ]; then \
+		echo "Usage: make recrawl URL='<pattern>'"; \
+		echo "Examples:"; \
+		echo "  make recrawl URL='https://example.com/page'"; \
+		echo "  make recrawl URL='/blog/*'"; \
+	else \
+		python3 recrawl.py "$(URL)"; \
+	fi
+
+# Clean up error pages (429s, short content, etc.)
+cleanup-errors:
+	@echo "Scanning for error pages..."
+	python3 cleanup_errors.py
+
+# Clean up orphaned embeddings
+cleanup-orphans:
+	@echo "Scanning for orphaned embeddings..."
+	python3 cleanup_orphans.py
+
+# Clean up databases and start fresh
+clean:
+	@echo "⚠️  WARNING: This will DELETE all databases!"
+	@echo "Are you sure you want to continue? [y/N] " && read ans && [ ${ans:-N} = y ]
+	@rm -f crawl_ledger.db chunks.db vector_store.db
+	@echo "✓ Databases removed"
